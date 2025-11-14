@@ -1,0 +1,48 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Deploy to ${{ github.event.inputs.environment }}
+      run: |
+        echo "Deploying to ${{ github.event.inputs.environment }}"
+        echo "This would deploy the monitoring stack"
+        # In a real scenario, you would:
+        # - SSH into your server
+        # - Pull latest images
+        # - Run docker-compose up -d
+        # - Run health checks
+
+    - name: Run health check
+      run: |
+        echo "Running post-deployment health checks..."
+        # docker-compose -f docker/docker-compose-monitoring.yml ps
+        # curl -f http://your-server:5000/health || exit 1
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        echo "Deployment ${{ job.status }}"
+        # This is where you'd send Slack/Discord notifications

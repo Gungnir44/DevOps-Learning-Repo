@@ -1,5 +1,9 @@
 # DevOps Learning Journey
 
+[![CI - Test and Lint](https://github.com/Gungnir44/DevOps-Learning-Repo/actions/workflows/ci.yml/badge.svg)](https://github.com/Gungnir44/DevOps-Learning-Repo/actions/workflows/ci.yml)
+[![Docker Build and Push](https://github.com/Gungnir44/DevOps-Learning-Repo/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Gungnir44/DevOps-Learning-Repo/actions/workflows/docker-build.yml)
+[![Deploy](https://github.com/Gungnir44/DevOps-Learning-Repo/actions/workflows/deploy.yml/badge.svg)](https://github.com/Gungnir44/DevOps-Learning-Repo/actions/workflows/deploy.yml)
+
 **Author**: Joshua
 **Background**: Software Engineering & Cyber Security
 **Goal**: Master DevOps practices and build a comprehensive portfolio
@@ -54,13 +58,27 @@ Read my detailed analysis: [why-devops-is-important.txt](./why-devops-is-importa
 - Quick Start: [docker/DOCKER_QUICK_START.md](./docker/DOCKER_QUICK_START.md)
 - Observability: [docker/OBSERVABILITY_GUIDE.md](./docker/OBSERVABILITY_GUIDE.md)
 
-### Phase 3: CI/CD Pipeline (Weeks 5-6)
-- [ ] GitHub Actions
-- [ ] Jenkins
-- [ ] Automated testing integration
-- [ ] Deployment strategies (blue-green, canary)
+### Phase 3: CI/CD Pipeline ✅ COMPLETED
+- [x] GitHub Actions workflows
+- [x] Automated testing (pytest with coverage)
+- [x] Code quality checks (flake8, black, pylint)
+- [x] Security scanning (safety, bandit, trivy)
+- [x] Docker image building and pushing
+- [x] Multi-stage deployment workflows
+- [x] CI/CD badges and status reporting
 
-**Project**: Automated build, test, and deployment pipeline
+**Project**: Production-ready CI/CD pipeline with automated testing and deployment
+**Tech Stack**:
+- CI/CD: GitHub Actions
+- Testing: pytest, pytest-cov
+- Linting: flake8, black, pylint
+- Security: bandit, safety, trivy
+- Containerization: Docker multi-stage builds
+
+**Workflows**:
+- CI: Automated testing, linting, and security scans on every push
+- Docker Build: Automated image builds with vulnerability scanning
+- Deploy: Manual deployment to multiple environments
 
 ### Phase 4: Infrastructure as Code (Weeks 7-8)
 - [ ] Terraform
