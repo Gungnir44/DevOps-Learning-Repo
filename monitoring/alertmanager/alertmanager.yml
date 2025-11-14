@@ -1,0 +1,149 @@
+# Prometheus AlertManager Configuration
+# This config handles alert routing, grouping, and notifications
+
+global:
+  # How long to wait before sending a notification again
+  resolve_timeout: 5m
+
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'your-email@gmail.com'
+  smtp_auth_username: 'your-email@gmail.com'
+  smtp_auth_password: 'your-app-password'
+  smtp_require_tls: true
+
+# Templates for custom notification messages
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree for organizing alerts
+route:
+  # Default receiver for all alerts
+  receiver: 'team-notifications'
+
+  # How long to wait before sending the first notification
+  group_wait: 10s
+
+  # How long to wait before sending notification about new alerts
+  group_interval: 10s
+
+  # How long to wait before re-sending a notification
+  repeat_interval: 3h
+
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+
+  # Child routes for specific alert types
+  routes:
+    # Critical alerts go to PagerDuty
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+      continue: true
+
+    # Database alerts
+    - match:
+        category: database
+      receiver: 'database-team'
+      group_wait: 30s
+
+    # Infrastructure alerts
+    - match:
+        category: infrastructure
+      receiver: 'infrastructure-team'
+
+    # Application alerts
+    - match:
+        category: application
+      receiver: 'dev-team'
+
+# Inhibition rules - prevent alert storms
+inhibit_rules:
+  # If a node is down, don't alert about pods on that node
+  - source_match:
+      severity: 'critical'
+      alertname: 'NodeDown'
+    target_match:
+      severity: 'warning'
+    equal: ['node']
+
+  # If entire service is down, don't alert about individual instances
+  - source_match:
+      severity: 'critical'
+      alertname: 'ServiceDown'
+    target_match:
+      severity: 'warning'
+    equal: ['service']
+
+# Notification receivers
+receivers:
+  # Default team notifications (email + Slack)
+  - name: 'team-notifications'
+    email_configs:
+      - to: 'devops-team@example.com'
+        headers:
+          Subject: '[ALERT] {{ .GroupLabels.alertname }} - {{ .Status | toUpper }}'
+        html: |
+          <h2>{{ .GroupLabels.alertname }}</h2>
+          <p><strong>Status:</strong> {{ .Status }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+          <p><strong>Time:</strong> {{ .StartsAt }}</p>
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts'
+        title: '{{ .GroupLabels.alertname }}'
+        text: |
+          *Status:* {{ .Status | toUpper }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ .CommonAnnotations.summary }}
+          {{ range .Alerts }}
+            *Description:* {{ .Annotations.description }}
+            *Details:*
+            {{ range .Labels.SortedPairs }} - {{ .Name }} = {{ .Value }}
+            {{ end }}
+          {{ end }}
+        send_resolved: true
+
+  # Critical alerts to PagerDuty
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+        description: '{{ .CommonAnnotations.summary }}'
+        details:
+          severity: '{{ .CommonLabels.severity }}'
+          alertname: '{{ .GroupLabels.alertname }}'
+
+  # Database team
+  - name: 'database-team'
+    email_configs:
+      - to: 'database-team@example.com'
+        headers:
+          Subject: '[DATABASE ALERT] {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#database-alerts'
+        send_resolved: true
+
+  # Infrastructure team
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure-team@example.com'
+        headers:
+          Subject: '[INFRA ALERT] {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#infrastructure-alerts'
+        send_resolved: true
+
+  # Development team
+  - name: 'dev-team'
+    email_configs:
+      - to: 'dev-team@example.com'
+        headers:
+          Subject: '[APP ALERT] {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#dev-alerts'
+        send_resolved: true

@@ -137,13 +137,37 @@ Read my detailed analysis: [why-devops-is-important.txt](./why-devops-is-importa
 - Namespace isolation
 - Service discovery
 
-### Phase 6: Cloud & Monitoring (Weeks 11-12)
-- [ ] AWS/Azure fundamentals
-- [ ] Prometheus & Grafana
-- [ ] ELK Stack (Elasticsearch, Logstash, Kibana)
-- [ ] Alerting & incident response
+### Phase 6: Cloud & Monitoring ✅ COMPLETED
+- [x] AWS ECS Fargate deployment
+- [x] Azure AKS deployment
+- [x] Prometheus AlertManager configuration
+- [x] Comprehensive alert rules (infrastructure, containers, databases, applications)
+- [x] Incident response runbooks
+- [x] CloudWatch and Azure Monitor integration
+- [x] Auto-scaling configuration
+- [x] High availability setup
 
-**Project**: Cloud-native application with full observability
+**Project**: Production-ready cloud deployments with advanced alerting
+**Tech Stack**:
+- Cloud: AWS ECS Fargate, Azure AKS
+- IaC: Terraform for AWS and Azure
+- Alerting: Prometheus AlertManager
+- Monitoring: CloudWatch, Azure Monitor, Container Insights
+- Notifications: Email, Slack, PagerDuty
+
+**Features**:
+- Multi-cloud deployment configurations (AWS + Azure)
+- 50+ alert rules covering infrastructure, containers, databases, and applications
+- Detailed incident response runbooks with step-by-step procedures
+- Auto-scaling based on CPU utilization
+- Persistent storage with EFS (AWS) and Azure Files
+- High availability across multiple availability zones
+- Production-grade security (encryption, IAM, RBAC)
+
+**Guides**:
+- Cloud Deployment: [cloud/README.md](./cloud/README.md)
+- Monitoring & Alerting: [monitoring/README.md](./monitoring/README.md)
+- Incident Runbooks: [monitoring/runbooks/](./monitoring/runbooks/)
 
 ### Phase 7: DevSecOps (Weeks 13-14)
 - [ ] Security scanning (SAST/DAST)
@@ -164,10 +188,16 @@ Read my detailed analysis: [why-devops-is-important.txt](./why-devops-is-importa
 │   └── bash/            # Bash scripts for system tasks
 ├── docker/              # Dockerfiles and compose files
 ├── kubernetes/          # K8s manifests and Helm charts
-├── terraform/           # Infrastructure as Code
+├── terraform/           # Infrastructure as Code (local)
 ├── ansible/             # Configuration management playbooks
+├── cloud/               # Cloud deployment (AWS ECS, Azure AKS)
+│   ├── aws/            # AWS ECS Fargate deployment
+│   └── azure/          # Azure AKS deployment
+├── monitoring/          # Advanced alerting and incident response
+│   ├── alertmanager/   # AlertManager configuration
+│   ├── alert-rules/    # Prometheus alert definitions
+│   └── runbooks/       # Incident response procedures
 ├── ci-cd/               # Pipeline configurations
-├── monitoring/          # Monitoring and alerting configs
 ├── docs/                # Documentation and learning notes
 └── projects/            # Complete project implementations
 ```

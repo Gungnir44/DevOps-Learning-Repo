@@ -1,0 +1,183 @@
+# Prometheus Alert Rules - Application Monitoring
+
+groups:
+  - name: application
+    interval: 30s
+    rules:
+      # Service availability
+      - alert: ServiceDown
+        expr: up{job!~"node-exporter|cadvisor"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "Service {{ $labels.job }} on {{ $labels.instance }} is down"
+          description: "Service has been down for more than 1 minute"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is above 5% (current: {{ $value }}%)"
+
+      - alert: CriticalErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 10
+        for: 2m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "Critical error rate on {{ $labels.job }}"
+          description: "Error rate is above 10% (current: {{ $value }}%)"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High response time on {{ $labels.job }}"
+          description: "95th percentile response time is above 1 second (current: {{ $value }}s)"
+
+      - alert: HighRequestRate
+        expr: rate(http_requests_total[5m]) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High request rate on {{ $labels.job }}"
+          description: "Request rate is {{ $value }} requests/second (threshold: 1000)"
+
+      # Queue and message broker alerts
+      - alert: RabbitMQQueueMessagesBuildup
+        expr: rabbitmq_queue_messages > 1000
+        for: 10m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} has message buildup"
+          description: "Queue has {{ $value }} messages (threshold: 1000)"
+
+      - alert: RabbitMQHighMessageRate
+        expr: rate(rabbitmq_queue_messages_published_total[5m]) > 100
+        for: 10m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "RabbitMQ high message publish rate"
+          description: "Publishing {{ $value }} messages/second"
+
+      - alert: RabbitMQNoConsumers
+        expr: rabbitmq_queue_consumers == 0
+        for: 10m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} has no consumers"
+          description: "No consumers are processing messages from this queue"
+
+      # Batch job alerts
+      - alert: BatchJobFailed
+        expr: kube_job_status_failed > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Batch job {{ $labels.namespace }}/{{ $labels.job_name }} failed"
+          description: "Job has {{ $value }} failed pods"
+
+      - alert: BatchJobTakingTooLong
+        expr: time() - kube_job_status_start_time > 3600
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Batch job {{ $labels.namespace }}/{{ $labels.job_name }} taking too long"
+          description: "Job has been running for more than 1 hour"
+
+      # Certificate expiration
+      - alert: CertificateExpiringSoon
+        expr: (ssl_certificate_expiry_seconds - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "SSL certificate expiring soon for {{ $labels.instance }}"
+          description: "Certificate expires in {{ $value }} days"
+
+      - alert: CertificateExpired
+        expr: ssl_certificate_expiry_seconds - time() < 0
+        for: 1m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "SSL certificate expired for {{ $labels.instance }}"
+          description: "Certificate has expired"
+
+  - name: slo
+    interval: 30s
+    rules:
+      # Service Level Objective alerts
+      - alert: SLOBudgetBurnRateFast
+        expr: |
+          (
+            rate(http_requests_total{status=~"2..|3.."}[5m])
+            /
+            rate(http_requests_total[5m])
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "Fast SLO budget burn rate for {{ $labels.job }}"
+          description: "Success rate ({{ $value }}) is below 95% - burning error budget quickly"
+
+      - alert: SLOBudgetBurnRateSlow
+        expr: |
+          (
+            rate(http_requests_total{status=~"2..|3.."}[1h])
+            /
+            rate(http_requests_total[1h])
+          ) < 0.99
+        for: 1h
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Slow SLO budget burn rate for {{ $labels.job }}"
+          description: "Success rate ({{ $value }}) is below 99% over 1 hour"
+
+      - alert: AvailabilitySLOViolation
+        expr: avg_over_time(up[30d]) < 0.999
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Availability SLO violation for {{ $labels.job }}"
+          description: "30-day availability ({{ $value }}) is below 99.9% SLO"
+
+      - alert: LatencySLOViolation
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[30d])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Latency SLO violation for {{ $labels.job }}"
+          description: "99th percentile latency over 30 days ({{ $value }}s) exceeds 500ms SLO"
