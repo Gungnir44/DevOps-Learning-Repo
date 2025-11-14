@@ -1,0 +1,42 @@
+---
+# Common role - Base system configuration
+
+- name: Update package cache (Debian/Ubuntu)
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  tags: packages
+
+- name: Install common packages
+  package:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - net-tools
+    state: present
+  tags: packages
+
+- name: Create monitoring user
+  user:
+    name: "{{ monitoring_user }}"
+    comment: "Monitoring Service User"
+    shell: /bin/bash
+    create_home: yes
+  tags: users
+
+- name: Configure firewall (if ufw is available)
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - '22'
+    - '9090'
+    - '3000'
+  when: ansible_os_family == "Debian"
+  ignore_errors: yes
+  tags: firewall

@@ -1,0 +1,27 @@
+# Example Terraform variables
+# Copy this file to terraform.tfvars and customize
+
+environment = "dev"
+
+# Port configurations
+prometheus_port = 9090
+grafana_port    = 3000
+redis_port      = 6379
+postgres_port   = 5432
+
+# Grafana credentials
+grafana_admin_user     = "admin"
+grafana_admin_password = "changeme"
+
+# PostgreSQL credentials
+postgres_user     = "devops"
+postgres_password = "changeme"
+postgres_db       = "monitoring"
+
+# Tags
+tags = {
+  Project   = "DevOps-Monitoring"
+  ManagedBy = "Terraform"
+  Owner     = "Joshua"
+  Environment = "dev"
+}

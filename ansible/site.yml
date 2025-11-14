@@ -1,0 +1,87 @@
+---
+# Main Ansible playbook for DevOps monitoring infrastructure
+# Run with: ansible-playbook -i inventories/dev site.yml
+
+- name: Configure monitoring infrastructure
+  hosts: monitoring_servers
+  become: yes
+  gather_facts: yes
+
+  vars:
+    monitoring_user: devops
+    monitoring_dir: /opt/monitoring
+    log_dir: /var/log/monitoring
+
+  pre_tasks:
+    - name: Display target host information
+      debug:
+        msg: "Configuring {{ inventory_hostname }} ({{ ansible_distribution }} {{ ansible_distribution_version }})"
+
+  roles:
+    - common
+    - docker
+    - monitoring
+
+  post_tasks:
+    - name: Verify Docker is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Display completion message
+      debug:
+        msg: "Monitoring infrastructure configured successfully on {{ inventory_hostname }}"
+
+- name: Deploy monitoring stack
+  hosts: monitoring_servers
+  become: yes
+
+  tasks:
+    - name: Ensure monitoring directory exists
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ monitoring_user }}"
+        group: "{{ monitoring_user }}"
+        mode: '0755'
+      loop:
+        - /opt/monitoring
+        - /opt/monitoring/prometheus
+        - /opt/monitoring/grafana
+        - /var/log/monitoring
+
+    - name: Copy Prometheus configuration
+      template:
+        src: templates/prometheus.yml.j2
+        dest: /opt/monitoring/prometheus/prometheus.yml
+        owner: "{{ monitoring_user }}"
+        mode: '0644'
+      notify: restart_prometheus
+
+    - name: Deploy monitoring containers
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        state: started
+        restart_policy: unless-stopped
+        published_ports: "{{ item.ports | default(omit) }}"
+        env: "{{ item.env | default(omit) }}"
+      loop:
+        - name: prometheus
+          image: prom/prometheus:latest
+          ports:
+            - "9090:9090"
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - "3000:3000"
+          env:
+            GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_password }}"
+
+  handlers:
+    - name: restart_prometheus
+      docker_container:
+        name: prometheus
+        state: started
+        restart: yes
