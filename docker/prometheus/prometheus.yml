@@ -1,0 +1,76 @@
+# Prometheus Configuration
+# Scrapes metrics from all services in the monitoring stack
+
+global:
+  scrape_interval: 15s # How often to scrape targets
+  evaluation_interval: 15s # How often to evaluate rules
+  external_labels:
+    monitor: 'devops-monitoring-stack'
+    environment: 'development'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Node Exporter - System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'system'
+          exporter: 'node'
+
+  # cAdvisor - Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'containers'
+          exporter: 'cadvisor'
+
+  # PostgreSQL Exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgresql'
+          exporter: 'postgres'
+          database: 'postgres-demo'
+
+  # Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
+          exporter: 'redis'
+          database: 'redis-demo'
+
+  # MongoDB (if we add exporter later)
+  # - job_name: 'mongodb'
+  #   static_configs:
+  #     - targets: ['mongodb-exporter:9216']
+
+  # MySQL (if we add exporter later)
+  # - job_name: 'mysql'
+  #   static_configs:
+  #     - targets: ['mysql-exporter:9104']
+
+  # RabbitMQ Management Plugin
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+        labels:
+          service: 'rabbitmq'
+          type: 'message-queue'
+    metrics_path: '/metrics'
+
+  # Dashboard Application (if it exposes metrics)
+  # - job_name: 'dashboard'
+  #   static_configs:
+  #     - targets: ['dashboard:5000']

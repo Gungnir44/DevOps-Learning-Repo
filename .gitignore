@@ -73,6 +73,7 @@ override.tf.json
 secrets.yaml
 credentials.json
 *.secret
+config.json
 
 # Logs
 logs/

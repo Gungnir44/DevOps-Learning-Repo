@@ -149,6 +149,236 @@ services:
       - "com.devops.service=nosql-database"
       - "com.devops.description=MongoDB NoSQL database"
 
+  # MySQL Database (Alternative Relational DB)
+  mysql-demo:
+    image: mysql:8-debian
+    container_name: devops-mysql
+    hostname: mysql-demo
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: demoapp
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "com.devops.service=mysql-database"
+      - "com.devops.description=MySQL relational database"
+
+  # Adminer - Database Management UI
+  adminer:
+    image: adminer:latest
+    container_name: devops-adminer
+    hostname: adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-demo
+      - mysql-demo
+      - mongodb-demo
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres-demo
+    labels:
+      - "com.devops.service=database-ui"
+      - "com.devops.description=Web-based database management"
+
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: devops-rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: adminpass
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "com.devops.service=message-queue"
+      - "com.devops.description=RabbitMQ message broker"
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: devops-prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    labels:
+      - "com.devops.service=metrics"
+      - "com.devops.description=Prometheus metrics collection"
+
+  # Grafana - Visualization Platform
+  grafana:
+    image: grafana/grafana:latest
+    container_name: devops-grafana
+    hostname: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    labels:
+      - "com.devops.service=visualization"
+      - "com.devops.description=Grafana dashboards"
+
+  # Node Exporter - System Metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: devops-node-exporter
+    hostname: node-exporter
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    labels:
+      - "com.devops.service=exporter"
+      - "com.devops.description=Node exporter for system metrics"
+
+  # cAdvisor - Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: devops-cadvisor
+    hostname: cadvisor
+    ports:
+      - "8082:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    privileged: true
+    labels:
+      - "com.devops.service=exporter"
+      - "com.devops.description=Container metrics exporter"
+
+  # Postgres Exporter - PostgreSQL Metrics
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: devops-postgres-exporter
+    hostname: postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://demouser:demopass@postgres-demo:5432/demodb?sslmode=disable"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-demo
+    labels:
+      - "com.devops.service=exporter"
+      - "com.devops.description=PostgreSQL metrics exporter"
+
+  # Redis Exporter - Redis Metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: devops-redis-exporter
+    hostname: redis-exporter
+    environment:
+      REDIS_ADDR: "redis-demo:6379"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - redis-demo
+    labels:
+      - "com.devops.service=exporter"
+      - "com.devops.description=Redis metrics exporter"
+
+  # Elasticsearch - Log Storage
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: devops-elasticsearch
+    hostname: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "com.devops.service=logging"
+      - "com.devops.description=Elasticsearch log storage"
+
+  # Kibana - Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: devops-kibana
+    hostname: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "com.devops.service=logging"
+      - "com.devops.description=Kibana log visualization"
+
 # Networks
 networks:
   monitoring-network:
@@ -181,3 +411,23 @@ volumes:
     driver: local
     labels:
       - "com.devops.volume=mongodb"
+  mysql-data:
+    driver: local
+    labels:
+      - "com.devops.volume=mysql"
+  rabbitmq-data:
+    driver: local
+    labels:
+      - "com.devops.volume=rabbitmq"
+  prometheus-data:
+    driver: local
+    labels:
+      - "com.devops.volume=prometheus"
+  grafana-data:
+    driver: local
+    labels:
+      - "com.devops.volume=grafana"
+  elasticsearch-data:
+    driver: local
+    labels:
+      - "com.devops.volume=elasticsearch"

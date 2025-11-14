@@ -58,12 +58,28 @@ docker-compose -f docker-compose-monitoring.yml logs -f
 
 Once running, open your browser:
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Dashboard** | http://localhost:5000 | Web UI for health reports |
-| **Web Demo** | http://localhost:8080 | Demo nginx server |
-| **API** | http://localhost:5000/api/latest | JSON health data |
-| **History** | http://localhost:5000/history | Historical reports |
+### Core Services
+| Service | URL | Credentials | Description |
+|---------|-----|-------------|-------------|
+| **Dashboard** | http://localhost:5000 | None | Web UI for health reports |
+| **API** | http://localhost:5000/api/latest | None | JSON health data |
+| **History** | http://localhost:5000/history | None | Historical reports |
+| **Web Demo** | http://localhost:8080 | None | Demo nginx server |
+
+### Observability & Monitoring
+| Service | URL | Credentials | Description |
+|---------|-----|-------------|-------------|
+| **Grafana** | http://localhost:3000 | admin / admin | Dashboards and visualization |
+| **Prometheus** | http://localhost:9090 | None | Metrics collection and queries |
+| **Kibana** | http://localhost:5601 | None | Log visualization and analysis |
+| **Elasticsearch** | http://localhost:9200 | None | Log storage and search |
+| **cAdvisor** | http://localhost:8082 | None | Container metrics |
+
+### Database Management
+| Service | URL | Credentials | Description |
+|---------|-----|-------------|-------------|
+| **Adminer** | http://localhost:8081 | varies | Universal database manager |
+| **RabbitMQ** | http://localhost:15672 | admin / adminpass | Message queue management |
 
 ---
 
@@ -73,12 +89,33 @@ Once running, open your browser:
 # Check container status
 docker ps
 
-# You should see:
-# - devops-health-checker  (running health checks)
-# - devops-dashboard       (web interface)
-# - devops-postgres        (demo database)
-# - devops-redis           (demo cache)
-# - devops-nginx           (demo web server)
+# You should see 16 containers:
+
+# Core Application Services
+# - devops-health-checker     (health monitoring every 5 min)
+# - devops-dashboard          (web UI on port 5000)
+# - devops-nginx              (web server on port 8080)
+
+# Databases (4)
+# - devops-postgres           (PostgreSQL)
+# - devops-mysql              (MySQL)
+# - devops-mongodb            (MongoDB)
+# - devops-redis              (Redis)
+
+# Observability Stack (5)
+# - devops-prometheus         (metrics collection on port 9090)
+# - devops-grafana            (dashboards on port 3000)
+# - devops-elasticsearch      (log storage on port 9200)
+# - devops-kibana             (log visualization on port 5601)
+# - devops-cadvisor           (container metrics on port 8082)
+
+# Metric Exporters (2)
+# - devops-postgres-exporter  (PostgreSQL metrics)
+# - devops-redis-exporter     (Redis metrics)
+
+# Management Interfaces (2)
+# - devops-adminer            (database manager on port 8081)
+# - devops-rabbitmq           (message queue on ports 5672, 15672)
 ```
 
 ---
@@ -210,28 +247,32 @@ docker system prune -a --volumes
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                 Docker Host                          │
-│                                                      │
-│  ┌──────────────────────────────────────────────┐  │
-│  │        monitoring-network (172.20.0.0/16)   │  │
-│  │                                              │  │
-│  │  ┌─────────────┐  ┌──────────────┐         │  │
-│  │  │health-checker│  │  dashboard   │:5000    │  │
-│  │  │             │  │              │         │  │
-│  │  │  Reports ───┼──┼──> Reads    │         │  │
-│  │  └─────────────┘  └──────────────┘         │  │
-│  │         │                                    │  │
-│  │         └───> Monitors:                     │  │
-│  │               ┌────────────┐                │  │
-│  │               │ postgres   │                │  │
-│  │               │ redis      │                │  │
-│  │               │ nginx      │:8080           │  │
-│  │               └────────────┘                │  │
-│  └──────────────────────────────────────────────┘  │
-│                                                      │
-│  Volumes: health-reports, postgres-data, redis-data │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      Docker Host                             │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │         monitoring-network (172.20.0.0/16)          │  │
+│  │                                                      │  │
+│  │  ┌─────────────┐  ┌──────────────┐  ┌──────────┐  │  │
+│  │  │health-checker│  │  dashboard   │  │ adminer  │  │  │
+│  │  │             │  │              │  │          │  │  │
+│  │  │  Reports ───┼──┼──> Reads    │  │   :8081  │  │  │
+│  │  └─────────────┘  └──────────────┘  └──────────┘  │  │
+│  │         │              :5000                        │  │
+│  │         └───> Monitors:                            │  │
+│  │               ┌───────────────┐                    │  │
+│  │               │ postgres      │                    │  │
+│  │               │ mysql         │                    │  │
+│  │               │ mongodb       │                    │  │
+│  │               │ redis         │                    │  │
+│  │               │ rabbitmq      │:15672              │  │
+│  │               │ nginx         │:8080               │  │
+│  │               └───────────────┘                    │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                              │
+│  Volumes: health-reports, postgres-data, mysql-data,        │
+│           mongodb-data, redis-data, rabbitmq-data           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
