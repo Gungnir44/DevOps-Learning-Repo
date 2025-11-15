@@ -1,0 +1,49 @@
+# ZAP Scanning Rules Configuration
+# Format: ID	THRESHOLD	[IGNORE/FAIL/WARN/INFO]
+# Scan rule IDs from https://www.zaproxy.org/docs/alerts/
+
+# High priority rules (FAIL on detection)
+10202	MEDIUM	FAIL	# Absence of Anti-CSRF Tokens
+10020	MEDIUM	FAIL	# X-Frame-Options Header Not Set
+10021	MEDIUM	FAIL	# X-Content-Type-Options Header Missing
+10023	MEDIUM	FAIL	# Information Disclosure - Debug Error Messages
+10049	MEDIUM	FAIL	# Storable and Cacheable Content
+10050	MEDIUM	FAIL	# Retrieved from Cache
+10055	MEDIUM	FAIL	# CSP: Wildcard Directive
+10056	MEDIUM	FAIL	# X-Debug-Token Information Leak
+10061	MEDIUM	FAIL	# X-AspNet-Version Response Header
+10062	MEDIUM	FAIL	# PII Disclosure
+
+# Medium priority rules (WARN on detection)
+10010	MEDIUM	WARN	# Cookie No HttpOnly Flag
+10011	MEDIUM	WARN	# Cookie Without Secure Flag
+10015	MEDIUM	WARN	# Re-examine Cache-control Directives
+10017	MEDIUM	WARN	# Cross-Domain JavaScript Source File Inclusion
+10019	MEDIUM	WARN	# Content-Type Header Missing
+10054	MEDIUM	WARN	# Cookie without SameSite Attribute
+10096	MEDIUM	WARN	# Timestamp Disclosure
+10098	MEDIUM	WARN	# Cross-Domain Misconfiguration
+
+# SQL Injection
+40018	MEDIUM	FAIL	# SQL Injection
+40019	MEDIUM	FAIL	# SQL Injection - MySQL
+40020	MEDIUM	FAIL	# SQL Injection - Hypersonic SQL
+40021	MEDIUM	FAIL	# SQL Injection - Oracle
+40022	MEDIUM	FAIL	# SQL Injection - PostgreSQL
+
+# XSS
+40012	MEDIUM	FAIL	# Cross Site Scripting (Reflected)
+40014	MEDIUM	FAIL	# Cross Site Scripting (Persistent)
+40016	MEDIUM	FAIL	# Cross Site Scripting (Persistent) - Prime
+40017	MEDIUM	FAIL	# Cross Site Scripting (Persistent) - Spider
+
+# Path Traversal
+6	MEDIUM	FAIL	# Path Traversal
+7	MEDIUM	FAIL	# Remote File Inclusion
+
+# Authentication
+10105	MEDIUM	WARN	# Weak Authentication Method
+
+# Ignore informational rules
+10109	MEDIUM	IGNORE	# Modern Web Application
+10027	MEDIUM	IGNORE	# Information Disclosure - Suspicious Comments
