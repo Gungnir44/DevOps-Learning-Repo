@@ -94,7 +94,7 @@ jobs:
           args: --severity-threshold=high --file=scripts/python/requirements.txt
 
       - name: Upload dependency scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: dependency-scan-results
@@ -187,7 +187,7 @@ jobs:
           enable_comments: false
 
       - name: Upload KICS results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: kics-results
@@ -218,7 +218,7 @@ jobs:
           pip-licenses --format=markdown --output-file=licenses.md
 
       - name: Upload license report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: license-report
           path: |
@@ -241,7 +241,7 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: sbom.spdx.json
@@ -260,7 +260,7 @@ jobs:
     if: always()
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Generate summary
         run: |

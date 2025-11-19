@@ -43,7 +43,7 @@ jobs:
           allow_issue_writing: false
 
       - name: Upload ZAP results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: zap-scan-results
@@ -79,7 +79,7 @@ jobs:
             -Format json
 
       - name: Upload Nikto results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nikto-results
@@ -143,7 +143,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload SSL/TLS results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tls-scan-results
@@ -179,7 +179,7 @@ jobs:
           done
 
       - name: Upload header analysis
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-headers
