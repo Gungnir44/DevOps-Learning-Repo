@@ -2,6 +2,7 @@
 Integration tests for the monitoring stack
 Tests the actual Docker containers and their interactions
 """
+
 import pytest
 import requests
 import time
@@ -16,10 +17,7 @@ class TestDockerStack:
         """Check if Docker is running"""
         try:
             result = subprocess.run(
-                ["docker", "ps"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["docker", "ps"], capture_output=True, text=True, timeout=5
             )
             return result.returncode == 0
         except Exception:
@@ -100,13 +98,14 @@ class TestDatabaseConnectivity:
         """Test PostgreSQL connection (if available)"""
         try:
             import psycopg2
+
             conn = psycopg2.connect(
                 host="localhost",
                 port=5432,
                 database="demodb",
                 user="demouser",
                 password="demopass",
-                connect_timeout=3
+                connect_timeout=3,
             )
             conn.close()
             assert True
@@ -119,7 +118,8 @@ class TestDatabaseConnectivity:
         """Test Redis connection (if available)"""
         try:
             import redis
-            r = redis.Redis(host='localhost', port=6379, socket_connect_timeout=3)
+
+            r = redis.Redis(host="localhost", port=6379, socket_connect_timeout=3)
             r.ping()
             assert True
         except ImportError:
@@ -149,5 +149,5 @@ class TestEndToEnd:
         pytest.skip("Requires running stack - implement when needed")
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])
